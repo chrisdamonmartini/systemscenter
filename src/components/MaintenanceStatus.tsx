@@ -96,7 +96,12 @@ const MaintenanceStatus: React.FC<MaintenanceStatusProps> = ({ repairs, technici
                 
                 <div className="mt-4 text-sm">
                   <p><span className="text-gray-600">Stage:</span> {repair.stage}</p>
-                  <p><span className="text-gray-600">Est. Completion:</span> {format(new Date(repair.estimatedCompletionTime), 'MMM d, yyyy')}</p>
+                  <p>
+                    <span className="text-gray-600">Est. Completion:</span>
+                    {repair.estimatedCompletionTime 
+                      ? format(new Date(repair.estimatedCompletionTime), 'MMM d, yyyy')
+                      : 'Not set'}
+                  </p>
                 </div>
                 
                 <div className="mt-3">

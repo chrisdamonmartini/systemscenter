@@ -134,18 +134,33 @@ export interface MaintenanceStatus {
   status: string;
 }
 
+// Add RepairStage type definition
+export type RepairStage = 
+  | 'Anomaly Detected'
+  | 'Ambiguity Identified'
+  | 'Fault Isolation'
+  | 'Packaging Work'
+  | 'Maintenance In Work'
+  | 'Inspection'
+  | 'Safe for Flight';
+
+// Update the Repair interface to use RepairStage
 export interface Repair {
   id: string;
   aircraftId: string;
   startTime: string;
-  estimatedCompletionTime: string;
+  estimatedCompletionTime?: string;
   technicianIds: string[];
   status: string;
-  stage: string;
+  stage: RepairStage;  // Update this to use RepairStage type
   description: string;
-  notes?: string;
+  notes: string;
   assignedTechnicians: Technician[];
-  partsRequired: { id: string; quantity: number; name?: string }[];
+  partsRequired: {
+    id: string;
+    quantity: number;
+    name?: string;
+  }[];
   location: string;
 }
 

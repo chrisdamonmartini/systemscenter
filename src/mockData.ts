@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Aircraft, SystemError, Part, Technician, Mission, Repair, WeatherCondition, MissionStage, Base } from './types';
+import { Aircraft, SystemError, Part, Technician, Mission, Repair, WeatherCondition, MissionStage, Base, RepairStage } from './types';
 import { addDays, subDays } from 'date-fns';
 
 const NOW = new Date();
@@ -105,25 +105,23 @@ const generateErrors = (): SystemError[] => {
 };
 
 // Generate mock repairs
-const generateRepair = (aircraftId: string, errorId: string): Repair => {
-  return {
-    id: uuidv4(),
-    aircraftId,
-    stage: 'Repair in Progress',
-    startTime: toISOString(subDays(NOW, 1)),
-    estimatedCompletionTime: toISOString(addDays(NOW, 2)),
-    technicianIds: [mockTechnicians[0].id, mockTechnicians[1].id],
-    assignedTechnicians: [mockTechnicians[0], mockTechnicians[1]],
-    partsRequired: [
-      { id: mockParts[0].id, quantity: 1, name: mockParts[0].name },
-      { id: mockParts[3].id, quantity: 2, name: mockParts[3].name }
-    ],
-    notes: 'Replacing main hydraulic pump and testing system integrity',
-    status: 'In Progress',
-    description: 'Repairing hydraulic system components',
-    location: 'Main Hangar'
-  };
-};
+const generateRepair = (aircraftId: string, repairId: string): Repair => ({
+  id: repairId,
+  aircraftId,
+  stage: 'Maintenance In Work' as RepairStage,
+  startTime: toISOString(subDays(NOW, 1)),
+  estimatedCompletionTime: toISOString(addDays(NOW, 2)),
+  technicianIds: [mockTechnicians[0].id, mockTechnicians[1].id],
+  assignedTechnicians: [mockTechnicians[0], mockTechnicians[1]],
+  partsRequired: [
+    { id: mockParts[0].id, quantity: 1, name: mockParts[0].name },
+    { id: mockParts[3].id, quantity: 2, name: mockParts[3].name }
+  ],
+  notes: 'Replacing main hydraulic pump and testing system integrity',
+  status: 'In Progress',
+  description: 'Repairing hydraulic system components',
+  location: 'Main Hangar'
+});
 
 // Generate mock missions
 const generateMissions = (aircraftId: string): Mission[] => {
@@ -248,7 +246,7 @@ const generateRepairWithStage = (aircraftId: string, repairId: string, stage: st
   estimatedCompletionTime: toISOString(addDays(NOW, 3)),
   technicianIds: [mockTechnicians[0].id],
   status: 'In Progress',
-  stage: stage,
+  stage: stage as RepairStage,
   description: `Aircraft ${aircraftId} ${stage.toLowerCase()} process`,
   notes: `Currently in ${stage.toLowerCase()} phase`,
   assignedTechnicians: [mockTechnicians[0]],
@@ -587,7 +585,24 @@ export const mockAircraft: Aircraft[] = [
     lastMaintenance: toISOString(subDays(NOW, 25)),
     nextScheduledMaintenance: toISOString(addDays(NOW, 65)),
     errors: generateErrors().slice(0, 2),
-    currentRepair: generateRepairWithStage('14', 'repair14', 'Maintenance Identified'),
+    currentRepair: {
+      id: 'repair14',
+      aircraftId: '14',
+      stage: "Packaging Work" as RepairStage,
+      startTime: "2024-02-27T03:08:00Z",
+      estimatedCompletionTime: "2024-03-01T03:08:00Z",
+      notes: "Preparing work package for system overhaul",
+      technicianIds: [mockTechnicians[0].id],
+      status: 'In Progress',
+      description: 'System overhaul preparation',
+      assignedTechnicians: [mockTechnicians[0]],
+      partsRequired: [{
+        id: mockParts[0].id,
+        name: mockParts[0].name,
+        quantity: 1
+      }],
+      location: 'Hangar D (KHIF)'
+    },
     missions: generateMissions('14'),
     repairs: [],
     currentMission: null,
@@ -654,10 +669,124 @@ export const mockAircraft: Aircraft[] = [
     ...generateAircraftMetrics(4.7),
     baseId: 'base1'
   },
+  // Aircraft 42, 47, and 55 with complete type properties
+  {
+    id: '42',
+    tailNumber: "AF-42",
+    model: "C-130J",
+    status: 'Maintenance',
+    location: "Hangar A",
+    locationLat: 41.123,
+    locationLng: -111.973,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 30)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 60)),
+    errors: generateErrors(),
+    currentRepair: {
+      id: 'repair42',
+      aircraftId: '42',
+      stage: "Ambiguity Identified" as RepairStage,
+      startTime: "2024-02-27T00:57:00Z",
+      estimatedCompletionTime: "2024-03-04T00:57:00Z",
+      notes: "Investigating hydraulic system anomalies",
+      technicianIds: [mockTechnicians[0].id],
+      status: 'In Progress',
+      description: 'Hydraulic system fault isolation',
+      assignedTechnicians: [mockTechnicians[0]],
+      partsRequired: [{
+        id: mockParts[0].id,
+        name: mockParts[0].name,
+        quantity: 1
+      }],
+      location: 'Hangar A'
+    },
+    missions: generateMissions('42'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(4.2),
+    baseId: 'KEDW'
+  },
+  {
+    id: '47',
+    tailNumber: "AF-47",
+    model: "C-130J",
+    status: 'Maintenance',
+    location: "Hangar B",
+    locationLat: 41.124,
+    locationLng: -111.974,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 25)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 65)),
+    errors: generateErrors(),
+    currentRepair: {
+      id: 'repair47',
+      aircraftId: '47',
+      stage: "Maintenance In Work" as RepairStage,
+      startTime: "2024-02-25T00:57:00Z",
+      estimatedCompletionTime: "2024-03-02T00:57:00Z",
+      notes: "Replacing main hydraulic pump",
+      technicianIds: [mockTechnicians[0].id],
+      status: 'In Progress',
+      description: 'Hydraulic pump replacement',
+      assignedTechnicians: [mockTechnicians[0]],
+      partsRequired: [{
+        id: mockParts[0].id,
+        name: mockParts[0].name,
+        quantity: 1
+      }],
+      location: 'Hangar B'
+    },
+    missions: generateMissions('47'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(3.8),
+    baseId: 'KEDW'
+  },
+  {
+    id: '55',
+    tailNumber: "AF-55",
+    model: "C-130J",
+    status: 'Maintenance',
+    location: "Hangar C",
+    locationLat: 41.125,
+    locationLng: -111.975,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 20)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 70)),
+    errors: generateErrors(),
+    currentRepair: {
+      id: 'repair55',
+      aircraftId: '55',
+      stage: "Packaging Work" as RepairStage,
+      startTime: "2024-02-26T00:57:00Z",
+      estimatedCompletionTime: "2024-03-03T00:57:00Z",
+      notes: "Preparing work package for hydraulic system overhaul",
+      technicianIds: [mockTechnicians[0].id],
+      status: 'In Progress',
+      description: 'Hydraulic system overhaul preparation',
+      assignedTechnicians: [mockTechnicians[0]],
+      partsRequired: [{
+        id: mockParts[0].id,
+        name: mockParts[0].name,
+        quantity: 1
+      }],
+      location: 'Hangar C'
+    },
+    missions: generateMissions('55'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(4.5),
+    baseId: 'KEDW'
+  }
 ].map(aircraft => {
   // Assign specific bases based on aircraft ID or other criteria
   let baseId;
   switch (aircraft.id) {
+    case '42':
+    case '47':
+    case '55':
+      baseId = 'KEDW'; // Keep their original base ID
+      break;
     case '11': // AF-10052
     case '14': // AF-10055
     case '17': // AF-10058

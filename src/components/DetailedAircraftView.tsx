@@ -101,7 +101,11 @@ const DetailedAircraftView: React.FC<DetailedAircraftViewProps> = ({ aircraft })
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Estimated Completion:</span>
-                  <span>{format(new Date(aircraft.currentRepair.estimatedCompletionTime), 'MMM d, yyyy')}</span>
+                  <span>
+                    {aircraft.currentRepair.estimatedCompletionTime 
+                      ? format(new Date(aircraft.currentRepair.estimatedCompletionTime), 'MMM d, yyyy')
+                      : 'Not set'}
+                  </span>
                 </div>
               </>
             )}
