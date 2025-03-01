@@ -164,6 +164,38 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView }) => {
               {!collapsed && <span>Reports</span>}
             </a>
           </motion.li>
+          
+          <motion.li whileHover={{ x: collapsed ? 0 : 5 }}>
+            <a 
+              href="#maintenance"
+              onClick={(e) => handleNavClick(e, 'maintenance')}
+              className={`flex items-center py-3 px-4 transition-colors ${
+                currentView === 'maintenance' 
+                  ? 'bg-blue-800 text-white' 
+                  : 'hover:bg-blue-800'
+              }`}
+              title="Maintenance Schedule"
+            >
+              <FaIcons.FaTools className={`text-xl ${collapsed ? 'mx-auto' : 'mr-3'}`} />
+              {!collapsed && <span>Maintenance Schedule</span>}
+            </a>
+          </motion.li>
+          
+          <motion.li whileHover={{ x: collapsed ? 0 : 5 }}>
+            <a 
+              href="#repairs"
+              onClick={(e) => handleNavClick(e, 'repairs')}
+              className={`flex items-center py-3 px-4 transition-colors ${
+                currentView === 'repairs' 
+                  ? 'bg-blue-800 text-white' 
+                  : 'hover:bg-blue-800'
+              }`}
+              title="Repair Tracker"
+            >
+              <FaIcons.FaWrench className={`text-xl ${collapsed ? 'mx-auto' : 'mr-3'}`} />
+              {!collapsed && <span>Repair Tracker</span>}
+            </a>
+          </motion.li>
         </ul>
       </nav>
       

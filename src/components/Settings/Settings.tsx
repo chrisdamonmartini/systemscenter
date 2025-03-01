@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import * as FaIcons from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import DataModel from './DataModel';
+import MockDataView from './MockDataView';
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'settings' | 'data'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'data' | 'mockdata'>('settings');
 
   return (
     <div className="space-y-6">
@@ -41,6 +42,18 @@ const Settings: React.FC = () => {
             >
               <FaIcons.FaDatabase className="inline-block mr-2" />
               Data Model
+            </button>
+
+            <button
+              className={`${
+                activeTab === 'mockdata'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              onClick={() => setActiveTab('mockdata')}
+            >
+              <FaIcons.FaCode className="inline-block mr-2" />
+              Mock Data
             </button>
           </nav>
         </div>
@@ -177,8 +190,10 @@ const Settings: React.FC = () => {
               </div>
             </motion.div>
           </div>
-        ) : (
+        ) : activeTab === 'data' ? (
           <DataModel />
+        ) : (
+          <MockDataView />
         )}
       </div>
     </div>

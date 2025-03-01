@@ -42,6 +42,22 @@ export interface CurrentRepair {
   partsRequired?: { id: string; quantity: number; name?: string }[];
 }
 
+export interface Base {
+  id: string;
+  name: string;
+  code: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  facilities: {
+    hangars: number;
+    runways: number;
+    maintenanceBays: number;
+  };
+  status: 'Active' | 'Limited' | 'Inactive';
+}
+
 export interface Aircraft {
   id: string;
   tailNumber: string;
@@ -50,18 +66,19 @@ export interface Aircraft {
   location: string;
   locationLat: number;
   locationLng: number;
-  lastMaintenance: string;
-  lastMaintenanceDate?: string;
-  nextScheduledMaintenance: string;
   missionCapable: boolean;
+  lastMaintenance: string;
+  nextScheduledMaintenance: string;
   errors: SystemError[];
+  currentRepair: Repair | null;
   missions: Mission[];
-  currentRepair?: CurrentRepair | null;
-  flightHours?: number;
-  flightHoursUntilMaintenance?: number;
-  age?: number;
   repairs: Repair[];
-  currentMission?: Mission | null;
+  currentMission: Mission | null;
+  maintenanceHistory: MaintenanceRecord[];
+  flightHours: number;
+  flightHoursUntilMaintenance: number;
+  age: number;
+  baseId: string;
 }
 
 export interface Technician {
@@ -117,11 +134,19 @@ export interface MaintenanceStatus {
   status: string;
 }
 
-export interface Repair extends CurrentRepair {
+export interface Repair {
+  id: string;
+  aircraftId: string;
+  startTime: string;
+  estimatedCompletionTime: string;
+  technicianIds: string[];
+  status: string;
+  stage: string;
+  description: string;
   notes?: string;
+  assignedTechnicians: Technician[];
   partsRequired: { id: string; quantity: number; name?: string }[];
-  assignedTechnicians: any[];
-  relatedErrorId?: string;
+  location: string;
 }
 
 export interface WeatherCondition {
@@ -245,4 +270,11 @@ export interface TestEvent {
   };
   briefingTime: string;
   testTeam: string[];
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  stage: string;
+  startTime: string;
+  completionTime: string;
 } 

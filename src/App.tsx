@@ -19,6 +19,8 @@ import PersonnelManagement from './components/PersonnelManagement';
 import Reports from './components/Reports';
 import FlightTestManagement from './components/FlightTest/FlightTestManagement';
 import Settings from './components/Settings/Settings';
+import MaintenanceSchedule from './components/Maintenance/MaintenanceSchedule';
+import RepairTracker from './components/RepairTracker/RepairTracker';
 
 // Helper function to get weather icon
 const getWeatherIcon = (conditions: string) => {
@@ -192,6 +194,26 @@ function App() {
             animate={{ opacity: 1 }}
           >
             <Settings />
+          </motion.div>
+        );
+        
+      case 'maintenance':
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <MaintenanceSchedule />
+          </motion.div>
+        );
+        
+      case 'repairs':
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <RepairTracker />
           </motion.div>
         );
         

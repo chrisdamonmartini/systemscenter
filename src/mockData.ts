@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Aircraft, SystemError, Part, Technician, Mission, Repair, WeatherCondition, MissionStage } from './types';
+import { Aircraft, SystemError, Part, Technician, Mission, Repair, WeatherCondition, MissionStage, Base } from './types';
 import { addDays, subDays } from 'date-fns';
 
 const NOW = new Date();
@@ -109,10 +109,10 @@ const generateRepair = (aircraftId: string, errorId: string): Repair => {
   return {
     id: uuidv4(),
     aircraftId,
-    relatedErrorId: errorId,
     stage: 'Repair in Progress',
     startTime: toISOString(subDays(NOW, 1)),
     estimatedCompletionTime: toISOString(addDays(NOW, 2)),
+    technicianIds: [mockTechnicians[0].id, mockTechnicians[1].id],
     assignedTechnicians: [mockTechnicians[0], mockTechnicians[1]],
     partsRequired: [
       { id: mockParts[0].id, quantity: 1, name: mockParts[0].name },
@@ -120,7 +120,8 @@ const generateRepair = (aircraftId: string, errorId: string): Repair => {
     ],
     notes: 'Replacing main hydraulic pump and testing system integrity',
     status: 'In Progress',
-    description: 'Repairing hydraulic system components'
+    description: 'Repairing hydraulic system components',
+    location: 'Main Hangar'
   };
 };
 
@@ -219,19 +220,49 @@ const missionStages: MissionStage[] = [
 ];
 
 // Helper function to generate varied flight hours and maintenance data
-const generateAircraftMetrics = (baseAge: number, isNew: boolean = false) => {
-  const flightHours = Math.floor(Math.random() * 1200 + 400); // 400-1600 hours
-  const maxHoursBeforeMaintenance = 1000;
-  const hoursUntilMaintenance = maxHoursBeforeMaintenance - (flightHours % maxHoursBeforeMaintenance);
+function generateAircraftMetrics(baseAge: number, lowHours = false) {
+  const flightHours = lowHours ? 
+    Math.round(Math.random() * 100) : 
+    Math.round(500 + Math.random() * 1500);
   
   return {
     flightHours,
-    flightHoursUntilMaintenance: hoursUntilMaintenance,
-    age: isNew ? baseAge : baseAge + Math.random() * 2 - 1 // Vary age by ±1 year
+    flightHoursUntilMaintenance: Math.round(100 + Math.random() * 200),
+    age: baseAge,
+    maintenanceHistory: [
+      {
+        id: `hist-${Math.random().toString(36).substr(2, 9)}`,
+        stage: 'Routine Check',
+        startTime: new Date(Date.now() - (30 + Math.random() * 60) * 24 * 60 * 60 * 1000).toISOString(),
+        completionTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    ]
   };
-};
+}
 
-// Update aircraft with varied maintenance data
+// Update the helper function to include location
+const generateRepairWithStage = (aircraftId: string, repairId: string, stage: string): Repair => ({
+  id: repairId,
+  aircraftId: aircraftId,
+  startTime: toISOString(subDays(NOW, 2)),
+  estimatedCompletionTime: toISOString(addDays(NOW, 3)),
+  technicianIds: [mockTechnicians[0].id],
+  status: 'In Progress',
+  stage: stage,
+  description: `Aircraft ${aircraftId} ${stage.toLowerCase()} process`,
+  notes: `Currently in ${stage.toLowerCase()} phase`,
+  assignedTechnicians: [mockTechnicians[0]],
+  partsRequired: [
+    {
+      id: mockParts[0].id,
+      quantity: 1,
+      name: mockParts[0].name
+    }
+  ],
+  location: 'Main Hangar'
+});
+
+// Update mockAircraft array to include aircraft in different repair stages
 export const mockAircraft: Aircraft[] = [
   {
     id: '1',
@@ -260,6 +291,7 @@ export const mockAircraft: Aircraft[] = [
       aircraftId: '1'
     },
     ...generateAircraftMetrics(4.5),
+    baseId: 'base1'
   },
   {
     id: '2',
@@ -278,6 +310,7 @@ export const mockAircraft: Aircraft[] = [
     repairs: [],
     currentMission: null,
     ...generateAircraftMetrics(3.8),
+    baseId: 'base2'
   },
   {
     id: '3',
@@ -306,6 +339,7 @@ export const mockAircraft: Aircraft[] = [
       aircraftId: '3'
     },
     ...generateAircraftMetrics(4.2),
+    baseId: 'base3'
   },
   {
     id: '4',
@@ -324,6 +358,7 @@ export const mockAircraft: Aircraft[] = [
     repairs: [],
     currentMission: null,
     ...generateAircraftMetrics(5.1),
+    baseId: 'base1'
   },
   {
     id: '5',
@@ -342,6 +377,7 @@ export const mockAircraft: Aircraft[] = [
     repairs: [],
     currentMission: null,
     ...generateAircraftMetrics(6.5),
+    baseId: 'base2'
   },
   {
     id: '6',
@@ -360,6 +396,7 @@ export const mockAircraft: Aircraft[] = [
     repairs: [],
     currentMission: null,
     ...generateAircraftMetrics(7.2),
+    baseId: 'base3'
   },
   {
     id: '7',
@@ -388,6 +425,7 @@ export const mockAircraft: Aircraft[] = [
       aircraftId: '7'
     },
     ...generateAircraftMetrics(2.5, true),
+    baseId: 'base1'
   },
   {
     id: '8',
@@ -416,6 +454,7 @@ export const mockAircraft: Aircraft[] = [
       aircraftId: '8'
     },
     ...generateAircraftMetrics(8.4),
+    baseId: 'base2'
   },
   {
     id: '9',
@@ -444,6 +483,7 @@ export const mockAircraft: Aircraft[] = [
       aircraftId: '9'
     },
     ...generateAircraftMetrics(3.9),
+    baseId: 'base3'
   },
   {
     id: '10',
@@ -472,8 +512,183 @@ export const mockAircraft: Aircraft[] = [
       aircraftId: '10'
     },
     ...generateAircraftMetrics(5.8),
+    baseId: 'base1'
+  },
+  // Add aircraft in Anomaly Detected stage
+  {
+    id: '11',
+    tailNumber: 'AF-10052',
+    model: 'F-35A',
+    status: 'Maintenance',
+    location: 'Hangar A',
+    locationLat: 41.123,
+    locationLng: -111.973,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 10)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 80)),
+    errors: generateErrors().slice(0, 1),
+    currentRepair: generateRepairWithStage('11', 'repair11', 'Anomaly Detected'),
+    missions: generateMissions('11'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(3.2),
+    baseId: 'base1'
+  },
+  // Add aircraft in Ambiguity Identified stage
+  {
+    id: '12',
+    tailNumber: 'AF-10053',
+    model: 'F-22A',
+    status: 'Maintenance',
+    location: 'Hangar B',
+    locationLat: 41.124,
+    locationLng: -111.974,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 15)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 75)),
+    errors: generateErrors().slice(0, 2),
+    currentRepair: generateRepairWithStage('12', 'repair12', 'Ambiguity Identified'),
+    missions: generateMissions('12'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(4.1),
+    baseId: 'base2'
+  },
+  // Add aircraft in Fault Isolation stage
+  {
+    id: '13',
+    tailNumber: 'AF-10054',
+    model: 'F-35A',
+    status: 'Maintenance',
+    location: 'Hangar C',
+    locationLat: 41.125,
+    locationLng: -111.975,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 20)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 70)),
+    errors: generateErrors().slice(0, 1),
+    currentRepair: generateRepairWithStage('13', 'repair13', 'Fault Isolation'),
+    missions: generateMissions('13'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(3.8),
+    baseId: 'base3'
+  },
+  // Add aircraft in Maintenance Identified stage
+  {
+    id: '14',
+    tailNumber: 'AF-10055',
+    model: 'F-22A',
+    status: 'Maintenance',
+    location: 'Hangar D',
+    locationLat: 41.126,
+    locationLng: -111.976,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 25)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 65)),
+    errors: generateErrors().slice(0, 2),
+    currentRepair: generateRepairWithStage('14', 'repair14', 'Maintenance Identified'),
+    missions: generateMissions('14'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(5.2),
+    baseId: 'base1'
+  },
+  // Add aircraft in Maintenance In Work stage
+  {
+    id: '15',
+    tailNumber: 'AF-10056',
+    model: 'F-35A',
+    status: 'Maintenance',
+    location: 'Hangar E',
+    locationLat: 41.127,
+    locationLng: -111.977,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 30)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 60)),
+    errors: generateErrors().slice(0, 1),
+    currentRepair: generateRepairWithStage('15', 'repair15', 'Maintenance In Work'),
+    missions: generateMissions('15'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(4.5),
+    baseId: 'base2'
+  },
+  // Add aircraft in Inspection stage
+  {
+    id: '16',
+    tailNumber: 'AF-10057',
+    model: 'F-22A',
+    status: 'Maintenance',
+    location: 'Hangar F',
+    locationLat: 41.128,
+    locationLng: -111.978,
+    missionCapable: false,
+    lastMaintenance: toISOString(subDays(NOW, 35)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 55)),
+    errors: generateErrors().slice(0, 1),
+    currentRepair: generateRepairWithStage('16', 'repair16', 'Inspection'),
+    missions: generateMissions('16'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(3.9),
+    baseId: 'base3'
+  },
+  // Add aircraft in Safe for Flight stage
+  {
+    id: '17',
+    tailNumber: 'AF-10058',
+    model: 'F-35A',
+    status: 'Maintenance',
+    location: 'Tarmac',
+    locationLat: 41.129,
+    locationLng: -111.979,
+    missionCapable: true,
+    lastMaintenance: toISOString(subDays(NOW, 40)),
+    nextScheduledMaintenance: toISOString(addDays(NOW, 50)),
+    errors: [],
+    currentRepair: generateRepairWithStage('17', 'repair17', 'Safe for Flight'),
+    missions: generateMissions('17'),
+    repairs: [],
+    currentMission: null,
+    ...generateAircraftMetrics(4.7),
+    baseId: 'base1'
+  },
+].map(aircraft => {
+  // Assign specific bases based on aircraft ID or other criteria
+  let baseId;
+  switch (aircraft.id) {
+    case '11': // AF-10052
+    case '14': // AF-10055
+    case '17': // AF-10058
+    case '1':  // AF-10042
+    case '4':  // AF-10045
+    case '7':  // AF-10048
+    case '10': // AF-10051
+      baseId = 'base1'; // Hill Air Force Base
+      break;
+    case '12': // AF-10053
+    case '15': // AF-10056
+    case '2':  // AF-10043
+    case '5':  // AF-10046
+    case '8':  // AF-10049
+      baseId = 'base2'; // Edwards Air Force Base
+      break;
+    case '13': // AF-10054
+    case '16': // AF-10057
+    case '3':  // AF-10044
+    case '6':  // AF-10047
+    case '9':  // AF-10050
+      baseId = 'base3'; // Nellis Air Force Base
+      break;
+    default:
+      baseId = 'base1';
   }
-];
+  return {
+    ...aircraft,
+    baseId
+  };
+});
 
 // Generate mock weather
 export const mockWeather: WeatherCondition = {
@@ -509,3 +724,51 @@ export const mockWeather: WeatherCondition = {
     }
   ]
 };
+
+export const mockBases: Base[] = [
+  {
+    id: 'base1',
+    name: 'Hill Air Force Base',
+    code: 'KHIF',
+    location: {
+      lat: 41.123,
+      lng: -111.973
+    },
+    facilities: {
+      hangars: 12,
+      runways: 2,
+      maintenanceBays: 8
+    },
+    status: 'Active'
+  },
+  {
+    id: 'base2',
+    name: 'Edwards Air Force Base',
+    code: 'KEDW',
+    location: {
+      lat: 34.905,
+      lng: -117.883
+    },
+    facilities: {
+      hangars: 15,
+      runways: 3,
+      maintenanceBays: 10
+    },
+    status: 'Active'
+  },
+  {
+    id: 'base3',
+    name: 'Nellis Air Force Base',
+    code: 'KLSV',
+    location: {
+      lat: 36.236,
+      lng: -115.034
+    },
+    facilities: {
+      hangars: 10,
+      runways: 2,
+      maintenanceBays: 6
+    },
+    status: 'Active'
+  }
+];

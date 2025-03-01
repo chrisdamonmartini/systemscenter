@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Aircraft } from '../types';
+import { Aircraft, Base } from '../types';
 import * as FaIcons from 'react-icons/fa';
 import * as BiIcons from 'react-icons/bi';
 import * as MdIcons from 'react-icons/md';
@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import AircraftSchematic from './AircraftSchematic';
 import AircraftMap from './AircraftMap';
 import { AircraftHealth } from './AircraftHealth';
+import { mockBases } from '../mockData';
 
 interface FleetManagementProps {
   aircraft: Aircraft[];
@@ -19,10 +20,12 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ aircraft }) => {
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('tailNumber');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBase, setSelectedBase] = useState<string | null>(null);
 
   // Filter and sort aircraft
   const filteredAircraft = aircraft
     .filter(a => !filterStatus || a.status === filterStatus)
+    .filter(a => !selectedBase || a.baseId === selectedBase)
     .filter(a => a.tailNumber.toLowerCase().includes(searchTerm.toLowerCase()) || 
                 a.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 a.location.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -37,8 +40,8 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ aircraft }) => {
         return 0;
       }
       if (sortBy === 'lastMaintenance') {
-        if (b.lastMaintenanceDate && a.lastMaintenanceDate) {
-          return new Date(b.lastMaintenanceDate).getTime() - new Date(a.lastMaintenanceDate).getTime();
+        if (b.lastMaintenance && a.lastMaintenance) {
+          return new Date(b.lastMaintenance).getTime() - new Date(a.lastMaintenance).getTime();
         }
         return 0;
       }
@@ -86,6 +89,17 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ aircraft }) => {
     { month: 'Jul', readiness: 93 },
     { month: 'Aug', readiness: 88 },
   ];
+
+  // Add base summary stats
+  const getBaseSummary = (baseId: string) => {
+    const baseAircraft = aircraft.filter(a => a.baseId === baseId);
+    return {
+      total: baseAircraft.length,
+      operational: baseAircraft.filter(a => a.status === 'Operational').length,
+      inMaintenance: baseAircraft.filter(a => a.status.includes('Maintenance')).length,
+      inMission: baseAircraft.filter(a => a.status === 'In Mission').length
+    };
+  };
 
   const renderTabContent = () => {
     switch (selectedTab) {
@@ -322,8 +336,8 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ aircraft }) => {
                       </td>
                       <td className="px-6 py-4">{aircraft.location}</td>
                       <td className="px-6 py-4">
-                        {aircraft.lastMaintenanceDate 
-                          ? new Date(aircraft.lastMaintenanceDate).toLocaleDateString() 
+                        {aircraft.lastMaintenance 
+                          ? new Date(aircraft.lastMaintenance).toLocaleDateString() 
                           : 'Not available'}
                       </td>
                       <td className="px-6 py-4">{aircraft.flightHours}</td>
@@ -383,8 +397,8 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ aircraft }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-500">Last Maintenance:</span>
                       <span>
-                        {selectedAircraft.lastMaintenanceDate 
-                          ? new Date(selectedAircraft.lastMaintenanceDate).toLocaleDateString() 
+                        {selectedAircraft.lastMaintenance 
+                          ? new Date(selectedAircraft.lastMaintenance).toLocaleDateString() 
                           : 'Not available'}
                       </span>
                     </div>
@@ -630,6 +644,57 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ aircraft }) => {
       </div>
       
       <div className="p-6">
+        {/* Add base filter dropdown */}
+        <div className="mb-4">
+          <select
+            value={selectedBase || ''}
+            onChange={(e) => setSelectedBase(e.target.value || null)}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+          >
+            <option value="">All Bases</option>
+            {mockBases.map(base => (
+              <option key={base.id} value={base.id}>
+                {base.name} ({base.code})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Base Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {mockBases.map(base => {
+            const summary = getBaseSummary(base.id);
+            return (
+              <motion.div
+                key={base.id}
+                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <h3 className="text-lg font-medium mb-2">{base.name}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Total Aircraft</p>
+                    <p className="text-xl font-semibold">{summary.total}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Operational</p>
+                    <p className="text-xl font-semibold text-green-600">{summary.operational}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">In Maintenance</p>
+                    <p className="text-xl font-semibold text-yellow-600">{summary.inMaintenance}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">In Mission</p>
+                    <p className="text-xl font-semibold text-blue-600">{summary.inMission}</p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
         {renderTabContent()}
       </div>
     </div>
