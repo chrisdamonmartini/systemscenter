@@ -115,16 +115,16 @@ const RepairTracker: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-bold text-red-700">Detection Method</h4>
+                  <h4 className="text-sm font-bold text-black">Detection Method</h4>
                   <p className="text-sm">Automated System Alert</p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-red-700">Alert Level</h4>
+                  <h4 className="text-sm font-bold text-black">Alert Level</h4>
                   <p className="text-sm">Critical</p>
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-bold text-red-700">Symptoms</h4>
+                <h4 className="text-sm font-bold text-black">Symptoms</h4>
                 <ul className="list-disc pl-4 text-sm">
                   <li>Unusual vibration during operation</li>
                   <li>Performance degradation noted</li>
@@ -132,7 +132,7 @@ const RepairTracker: React.FC = () => {
                 </ul>
               </div>
               <div>
-                <h4 className="text-sm font-bold text-red-700">Initial Assessment</h4>
+                <h4 className="text-sm font-bold text-black">Initial Assessment</h4>
                 <p className="text-sm bg-red-50 p-2 rounded">
                   Potential hydraulic system malfunction detected during routine operation.
                   Multiple warning indicators active.
@@ -146,7 +146,7 @@ const RepairTracker: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-bold text-orange-700">Possible Systems Affected</h4>
+                  <h4 className="text-sm font-bold text-black">Possible Systems Affected</h4>
                   <ul className="text-sm list-disc pl-4">
                     <li>Primary Hydraulics</li>
                     <li>Secondary Control Systems</li>
@@ -154,7 +154,7 @@ const RepairTracker: React.FC = () => {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-orange-700">Test Procedures Required</h4>
+                  <h4 className="text-sm font-bold text-black">Test Procedures Required</h4>
                   <ul className="text-sm list-disc pl-4">
                     <li>Pressure Test</li>
                     <li>Visual Inspection</li>
@@ -163,7 +163,7 @@ const RepairTracker: React.FC = () => {
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-bold text-orange-700">Diagnostic Steps</h4>
+                <h4 className="text-sm font-bold text-black">Diagnostic Steps</h4>
                 <p className="text-sm bg-orange-50 p-2 rounded">
                   Multiple systems showing interconnected symptoms. 
                   Initial testing indicates potential root cause in hydraulic system.

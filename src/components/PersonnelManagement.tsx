@@ -1,164 +1,402 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Table, 
+  Card, 
+  Row, 
+  Col, 
+  Input, 
+  Button, 
+  Tag, 
+  Tooltip, 
+  Tabs, 
+  Badge, 
+  Progress,
+  Select,
+  Divider
+} from 'antd';
+import { 
+  InfoCircleOutlined, 
+  UserOutlined, 
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
+  ToolOutlined,
+  WarningOutlined,
+  TeamOutlined
+} from '@ant-design/icons';
+import { mockTechnicians } from '../mockData';
+import { checkQualificationStatus } from '../utils/qualificationUtils';
 import { Technician } from '../types';
-import * as FaIcons from 'react-icons/fa';
-import { motion } from 'framer-motion';
+
+const { TabPane } = Tabs;
+const { Search } = Input;
+const { Option } = Select;
 
 interface PersonnelManagementProps {
-  technicians: Technician[];
+  technicians?: Technician[];
 }
 
-const PersonnelManagement: React.FC<PersonnelManagementProps> = ({ technicians }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'assigned'>('all');
-  const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
+const PersonnelManagement: React.FC<PersonnelManagementProps> = ({ technicians: initialTechnicians }) => {
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [filteredTechnicians, setFilteredTechnicians] = useState<Technician[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [filterStatus, setFilterStatus] = useState('all');
 
-  // Filter and search
-  const filteredTechnicians = technicians.filter(tech => {
-    const matchesSearch = searchTerm === '' || tech.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAvailability = availabilityFilter === 'all' ||
-      (availabilityFilter === 'available' && tech.available) ||
-      (availabilityFilter === 'assigned' && !tech.available);
-    return matchesSearch && matchesAvailability;
-  });
+  useEffect(() => {
+    // Use props if provided, otherwise use mock data
+    setTechnicians(initialTechnicians || mockTechnicians);
+    setFilteredTechnicians(initialTechnicians || mockTechnicians);
+  }, [initialTechnicians]);
 
-  // Summary statistics
+  useEffect(() => {
+    let filtered = [...technicians];
+    
+    // Apply search filter
+    if (searchText) {
+      filtered = filtered.filter(tech => 
+        tech.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(tech => {
+        if (filterStatus === 'available') return tech.available;
+        if (filterStatus === 'assigned') return tech.currentAssignment;
+        if (filterStatus === 'on-leave') return tech.availability === 'Off Duty';
+        return true;
+      });
+    }
+    
+    setFilteredTechnicians(filtered);
+  }, [searchText, technicians, filterStatus]);
+
+  // Count metrics for status cards
   const totalPersonnel = technicians.length;
-  const availablePersonnel = technicians.filter(tech => tech.available).length;
-  const assignedPersonnel = totalPersonnel - availablePersonnel;
+  const availablePersonnel = technicians.filter(t => t.available && !t.currentAssignment).length;
+  const assignedPersonnel = technicians.filter(t => t.currentAssignment).length;
+  const onLeavePersonnel = technicians.filter(t => t.availability === 'Off Duty').length;
+  const inTrainingPersonnel = 2; // Mock data, would be calculated from technician trainings
+
+  // Generate certification expiration data
+  const expirationData = technicians
+    .filter(tech => (tech as any).certifications && (tech as any).certifications.length > 0)
+    .flatMap((tech: Technician) => {
+      return ((tech as any).certifications || []).map((cert: any) => {
+        const expDate = new Date(cert.expirationDate);
+        const now = new Date();
+        const daysUntil = Math.floor((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        return {
+          techId: tech.id,
+          name: tech.name,
+          certType: cert.type,
+          daysUntil,
+          date: cert.expirationDate,
+          status: daysUntil < 0 ? 'expired' : daysUntil <= 30 ? 'critical' : daysUntil <= 60 ? 'warning' : 'good'
+        };
+      });
+    })
+    .sort((a, b) => a.daysUntil - b.daysUntil)
+    .slice(0, 10);
+
+  // Generate specialization data for pie chart
+  const specializationData = technicians.reduce((acc, tech) => {
+    if (tech.specialties) {
+      tech.specialties.forEach((specialty: string) => {
+        if (!acc[specialty]) {
+          acc[specialty] = 0;
+        }
+        acc[specialty]++;
+      });
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const pieData = Object.entries(specializationData).map(([specialty, count]) => ({
+    type: specialty,
+    value: count
+  }));
+
+  // Table columns
+  const columns = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Role/Specialties',
+      dataIndex: 'specialties',
+      key: 'specialties',
+      render: (_: any, record: Technician) => (
+        <span>
+          {record.specialties?.map((specialty: string) => (
+            <Tag color="blue" key={specialty}>
+              {specialty}
+            </Tag>
+          ))}
+        </span>
+      ),
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: (_: any, record: Technician) => {
+        if (record.currentAssignment) {
+          return <Tag color="red">Assigned</Tag>;
+        }
+        if (record.availability === 'Off Duty') {
+          return <Tag color="orange">On Leave</Tag>;
+        }
+        if (record.available) {
+          return <Tag color="green">Available</Tag>;
+        }
+        return <Tag>Unavailable</Tag>;
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: Technician) => (
+        <Tooltip title="View details">
+          <Button 
+            type="primary" 
+            size="small" 
+            onClick={() => console.log('View details for', record.name)}
+          >
+            <InfoCircleOutlined /> Details
+          </Button>
+        </Tooltip>
+      ),
+    },
+  ];
+
+  // Training completion data
+  const trainingData = [
+    { program: 'F-35 Systems', completed: 15, total: 20 },
+    { program: 'Safety Procedures', completed: 22, total: 25 },
+    { program: 'Engine Maintenance', completed: 8, total: 18 },
+    { program: 'Avionics Certification', completed: 12, total: 15 },
+  ];
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-900">
-        <FaIcons.FaUsers className="mr-2" /> Personnel Management
-      </h2>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="bg-blue-700 p-4 rounded-lg text-center shadow-md"
-        >
-          <div className="text-3xl font-bold text-white">{totalPersonnel}</div>
-          <div className="text-sm text-blue-100">Total Personnel</div>
-        </motion.div>
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="bg-green-700 p-4 rounded-lg text-center shadow-md"
-        >
-          <div className="text-3xl font-bold text-white">{availablePersonnel}</div>
-          <div className="text-sm text-green-100">Available</div>
-        </motion.div>
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="bg-orange-700 p-4 rounded-lg text-center shadow-md"
-        >
-          <div className="text-3xl font-bold text-white">{assignedPersonnel}</div>
-          <div className="text-sm text-orange-100">Assigned</div>
-        </motion.div>
+    <div className="personnel-management-container" style={{ padding: '20px' }}>
+      <div className="page-header" style={{ marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '24px', display: 'flex', alignItems: 'center' }}>
+          <TeamOutlined style={{ marginRight: '10px' }} /> Personnel Management
+        </h1>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex justify-between mb-4">
-        <input 
-          type="text"
-          placeholder="Search by name..."
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select 
-          className="ml-4 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          value={availabilityFilter}
-          onChange={(e) => setAvailabilityFilter(e.target.value as 'all' | 'available' | 'assigned')}
-        >
-          <option value="all">All</option>
-          <option value="available">Available</option>
-          <option value="assigned">Assigned</option>
-        </select>
-      </div>
+      <Tabs activeKey={activeTab} onChange={(key: string) => setActiveTab(key)}>
+        <TabPane tab="Overview" key="overview">
+          {/* Status Cards */}
+          <Row gutter={16} style={{ marginBottom: '20px' }}>
+            <Col span={4}>
+              <Card style={{ background: '#1890ff', color: 'white', textAlign: 'center' }}>
+                <UserOutlined style={{ fontSize: '24px' }} />
+                <div style={{ fontSize: '36px', fontWeight: 'bold' }}>{totalPersonnel}</div>
+                <div>Total Personnel</div>
+              </Card>
+            </Col>
+            <Col span={4}>
+              <Card style={{ background: '#52c41a', color: 'white', textAlign: 'center' }}>
+                <CheckCircleOutlined style={{ fontSize: '24px' }} />
+                <div style={{ fontSize: '36px', fontWeight: 'bold' }}>{availablePersonnel}</div>
+                <div>Available</div>
+              </Card>
+            </Col>
+            <Col span={4}>
+              <Card style={{ background: '#f5222d', color: 'white', textAlign: 'center' }}>
+                <ToolOutlined style={{ fontSize: '24px' }} />
+                <div style={{ fontSize: '36px', fontWeight: 'bold' }}>{assignedPersonnel}</div>
+                <div>Assigned</div>
+              </Card>
+            </Col>
+            <Col span={4}>
+              <Card style={{ background: '#fa8c16', color: 'white', textAlign: 'center' }}>
+                <CalendarOutlined style={{ fontSize: '24px' }} />
+                <div style={{ fontSize: '36px', fontWeight: 'bold' }}>{onLeavePersonnel}</div>
+                <div>On Leave</div>
+              </Card>
+            </Col>
+            <Col span={4}>
+              <Card style={{ background: '#722ed1', color: 'white', textAlign: 'center' }}>
+                <ClockCircleOutlined style={{ fontSize: '24px' }} />
+                <div style={{ fontSize: '36px', fontWeight: 'bold' }}>{inTrainingPersonnel}</div>
+                <div>In Training</div>
+              </Card>
+            </Col>
+            <Col span={4}>
+              <Card style={{ background: '#eb2f96', color: 'white', textAlign: 'center' }}>
+                <WarningOutlined style={{ fontSize: '24px' }} />
+                <div style={{ fontSize: '36px', fontWeight: 'bold' }}>
+                  {expirationData.filter(e => e.status === 'critical' || e.status === 'expired').length}
+                </div>
+                <div>Cert. Alerts</div>
+              </Card>
+            </Col>
+          </Row>
 
-      {/* Personnel List */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredTechnicians.map((tech) => (
-              <tr key={tech.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{tech.name}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{tech.specialties?.join(', ') || 'N/A'}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    tech.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {tech.available ? 'Available' : 'Assigned'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button 
-                    className="text-blue-600 hover:text-blue-900"
-                    onClick={() => setSelectedTechnician(tech)}
-                  >
-                    <FaIcons.FaInfoCircle className="inline" /> Details
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          {/* Dashboard Widgets */}
+          <Row gutter={16}>
+            {/* Certification Expiration Timeline - Update span from 16 to 24 to take full width */}
+            <Col span={24}>
+              <Card title="Upcoming Certification Expirations" style={{ height: '400px', overflow: 'auto' }}>
+                {expirationData.length > 0 ? (
+                  <div>
+                    {expirationData.map((item, index) => (
+                      <div 
+                        key={index} 
+                        style={{ 
+                          display: 'flex', 
+                          marginBottom: '12px', 
+                          padding: '8px', 
+                          borderRadius: '4px',
+                          background: item.status === 'expired' ? '#ffccc7' : 
+                                     item.status === 'critical' ? '#ffe7ba' : 
+                                     item.status === 'warning' ? '#ffffb8' : '#f6ffed'
+                        }}
+                      >
+                        <div style={{ width: '30%' }}>
+                          <strong>{item.name}</strong>
+                        </div>
+                        <div style={{ width: '30%' }}>
+                          {item.certType}
+                        </div>
+                        <div style={{ width: '20%' }}>
+                          {new Date(item.date).toLocaleDateString()}
+                        </div>
+                        <div style={{ width: '20%' }}>
+                          <Badge 
+                            status={
+                              item.status === 'expired' ? 'error' : 
+                              item.status === 'critical' ? 'warning' : 
+                              item.status === 'warning' ? 'processing' : 'success'
+                            } 
+                            text={
+                              item.status === 'expired' ? 'Expired' : 
+                              `${item.daysUntil} days left`
+                            } 
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <p>No certification expiration data available</p>
+                  </div>
+                )}
+              </Card>
+            </Col>
+          </Row>
 
-      {/* Technician Details Modal */}
-      {selectedTechnician && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <motion.div 
-            className="bg-white rounded-lg max-w-md w-full mx-4 overflow-hidden"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <div className="flex justify-between items-center border-b p-4">
-              <h3 className="text-lg font-bold">Technician Details</h3>
-              <button onClick={() => setSelectedTechnician(null)} className="text-gray-500 hover:text-gray-700">
-                <FaIcons.FaTimes />
-              </button>
-            </div>
-            <div className="p-4">
-              <h4 className="font-medium">{selectedTechnician.name}</h4>
-              <p className="text-gray-600 mt-2">Specialties: {selectedTechnician.specialties?.join(', ') || 'N/A'}</p>
-              <p className="text-gray-600 mt-2">Status: {selectedTechnician.available ? 'Available' : 'Assigned'}</p>
-              {selectedTechnician.currentAssignment && (
-                <p className="text-gray-600 mt-2">Current Assignment: {selectedTechnician.currentAssignment}</p>
-              )}
-            </div>
-            <div className="border-t p-4 flex justify-end">
-              <button 
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                onClick={() => setSelectedTechnician(null)}
-              >
-                Close
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+          <Divider />
+
+          {/* Training Completion Section */}
+          <Row>
+            <Col span={24}>
+              <Card title="Training Completion Status">
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                  {trainingData.map((training, index) => (
+                    <div key={index} style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{training.program}</span>
+                        <span>{training.completed}/{training.total} Complete</span>
+                      </div>
+                      <Progress 
+                        percent={Math.round((training.completed / training.total) * 100)} 
+                        status={
+                          (training.completed / training.total) === 1 ? 'success' : 'active'
+                        } 
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </TabPane>
+
+        <TabPane tab="Personnel List" key="personnel">
+          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+            <Search
+              placeholder="Search by name..."
+              onSearch={(value: string) => setSearchText(value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
+              style={{ width: 300 }}
+            />
+            <Select 
+              defaultValue="all" 
+              style={{ width: 200 }} 
+              onChange={(value: string) => setFilterStatus(value)}
+            >
+              <Option value="all">All Status</Option>
+              <Option value="available">Available</Option>
+              <Option value="assigned">Assigned</Option>
+              <Option value="on-leave">On Leave</Option>
+            </Select>
+          </div>
+          
+          <Table 
+            columns={columns} 
+            dataSource={filteredTechnicians}
+            rowKey="id"
+            expandable={{
+              expandedRowRender: (record: Technician) => (
+                <div style={{ padding: '20px' }}>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <h3>Certifications</h3>
+                      {(record as any).certifications && (record as any).certifications.length > 0 ? (
+                        (record as any).certifications.map((cert: any, idx: number) => (
+                          <div key={idx} style={{ marginBottom: '8px', padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                            <div><strong>{cert.type}</strong> (#{cert.number})</div>
+                            <div>Status: <Tag color={cert.status === 'Active' ? 'green' : 'red'}>{cert.status}</Tag></div>
+                            <div>Expires: {new Date(cert.expirationDate).toLocaleDateString()}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p>No certifications</p>
+                      )}
+                    </Col>
+                    <Col span={12}>
+                      <h3>Training History</h3>
+                      {(record as any).trainings && (record as any).trainings.length > 0 ? (
+                        (record as any).trainings.map((training: any, idx: number) => (
+                          <div key={idx} style={{ marginBottom: '8px', padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                            <div><strong>{training.name}</strong></div>
+                            <div>Completed: {new Date(training.completedDate).toLocaleDateString()}</div>
+                            <div>Valid until: {new Date(training.validUntil).toLocaleDateString()}</div>
+                            <div>Score: {training.score}%</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p>No training records</p>
+                      )}
+                    </Col>
+                  </Row>
+                  {(record as any).assignmentHistory && (record as any).assignmentHistory.length > 0 && (
+                    <div style={{ marginTop: '20px' }}>
+                      <h3>Recent Assignments</h3>
+                      <ul>
+                        {(record as any).assignmentHistory.map((assignment: any, idx: number) => (
+                          <li key={idx}>
+                            <strong>{assignment.taskType}</strong> on Aircraft {assignment.aircraftId}<br />
+                            {new Date(assignment.startDate).toLocaleDateString()} - {new Date(assignment.endDate).toLocaleDateString()}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ),
+            }}
+          />
+        </TabPane>
+      </Tabs>
     </div>
   );
 };

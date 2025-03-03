@@ -1,5 +1,20 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Aircraft, SystemError, Part, Technician, Mission, Repair, WeatherCondition, MissionStage, Base, RepairStage } from './types';
+import { 
+  Aircraft, 
+  SystemError, 
+  Part, 
+  Technician, 
+  Mission, 
+  Repair, 
+  WeatherCondition, 
+  MissionStage, 
+  Base, 
+  RepairStage, 
+  FaultIsolationProcedure, 
+  RepairProcedure, 
+  ModKit, 
+  AircraftWithAnomalies
+} from './types';
 import { addDays, subDays } from 'date-fns';
 
 const NOW = new Date();
@@ -7,33 +22,381 @@ const NOW = new Date();
 // Helper to create ISO date strings
 const toISOString = (date: Date) => date.toISOString();
 
+// At the top of the mockData.ts file, add:
+interface TechnicianWithDetails extends Omit<Technician, 'certifications' | 'trainings' | 'assignmentHistory'> {
+  certifications?: {
+    type: string;
+    number: string;
+    issuedDate: string;
+    expirationDate: string;
+    status: string;
+  }[];
+  trainings?: {
+    name: string;
+    completedDate: string;
+    validUntil: string;
+    score: number;
+  }[];
+  assignmentHistory?: {
+    aircraftId: string;
+    taskType: string;
+    startDate: string;
+    endDate: string;
+    outcome: string;
+  }[];
+}
+
 // Generate mock technicians
-export const mockTechnicians: Technician[] = [
+export const mockTechnicians: TechnicianWithDetails[] = [
   {
-    id: uuidv4(),
+    id: '1',
     name: 'John Smith',
     specialties: ['Avionics', 'Electrical'],
     available: true,
+    rank: 'Senior Technician',
+    certifications: [
+      {
+        type: 'Airframe Electronics Technician (AET)',
+        number: 'AET45678',
+        issuedDate: '2020-03-15',
+        expirationDate: '2024-06-15',
+        status: 'Active'
+      },
+      {
+        type: 'F-35 Avionics Systems',
+        number: 'F35-AV-2022',
+        issuedDate: '2022-01-10',
+        expirationDate: '2024-01-10',
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Advanced Troubleshooting for Military Aircraft',
+        completedDate: '2022-09-05',
+        validUntil: '2025-09-05',
+        score: 95
+      },
+      {
+        name: 'Electrical Systems Safety',
+        completedDate: '2023-02-10',
+        validUntil: '2025-02-10',
+        score: 92
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-7349',
+        taskType: 'Avionics System Repair',
+        startDate: '2023-08-10',
+        endDate: '2023-08-12',
+        outcome: 'Completed'
+      },
+      {
+        aircraftId: 'AC-5621',
+        taskType: 'Navigation System Calibration',
+        startDate: '2023-07-22',
+        endDate: '2023-07-23',
+        outcome: 'Completed'
+      }
+    ],
+    availability: 'Available'
   },
   {
-    id: uuidv4(),
+    id: '2',
     name: 'Maria Garcia',
     specialties: ['Engines', 'Hydraulics'],
     available: false,
-    currentAssignment: '1',
+    currentAssignment: 'AC-8235 Engine Overhaul',
+    rank: 'Technician II',
+    certifications: [
+      {
+        type: 'F110 Engine Specialist',
+        number: 'F110-2023-735',
+        issuedDate: '2022-05-20',
+        expirationDate: '2024-05-20',
+        status: 'Active'
+      },
+      {
+        type: 'Hydraulic Systems Maintenance',
+        number: 'HYD-435',
+        issuedDate: '2021-11-15',
+        expirationDate: '2023-11-15', // About to expire
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Jet Engine Overhaul Procedures',
+        completedDate: '2022-06-10',
+        validUntil: '2024-06-10',
+        score: 88
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-8235',
+        taskType: 'Engine Overhaul',
+        startDate: '2023-09-01',
+        endDate: '2023-09-10',
+        outcome: 'In Progress'
+      }
+    ],
+    availability: 'On Duty'
   },
   {
-    id: uuidv4(),
+    id: '3',
     name: 'David Johnson',
     specialties: ['Airframe', 'Landing Gear'],
     available: true,
+    rank: 'Lead Technician',
+    certifications: [
+      {
+        type: 'A&P License',
+        number: 'AP-98765',
+        issuedDate: '2019-04-10',
+        expirationDate: '2025-04-10',
+        status: 'Active'
+      },
+      {
+        type: 'NDT Level II',
+        number: 'NDT-II-4532',
+        issuedDate: '2020-08-21',
+        expirationDate: '2024-08-21',
+        status: 'Active'
+      },
+      {
+        type: 'Landing Gear Specialist',
+        number: 'LG-2022-398',
+        issuedDate: '2022-02-15',
+        expirationDate: '2024-02-15',
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Structural Repair Techniques',
+        completedDate: '2022-07-15',
+        validUntil: '2024-07-15',
+        score: 97
+      },
+      {
+        name: 'Composite Materials Repair',
+        completedDate: '2023-01-25',
+        validUntil: '2025-01-25',
+        score: 94
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-3246',
+        taskType: 'Landing Gear Overhaul',
+        startDate: '2023-06-05',
+        endDate: '2023-06-12',
+        outcome: 'Completed'
+      },
+      {
+        aircraftId: 'AC-7519',
+        taskType: 'Fuselage Inspection',
+        startDate: '2023-05-15',
+        endDate: '2023-05-17',
+        outcome: 'Completed'
+      }
+    ],
+    availability: 'Available'
   },
   {
-    id: uuidv4(),
+    id: '4',
     name: 'Sarah Williams',
     specialties: ['Weapons Systems', 'Radar'],
     available: true,
+    rank: 'Specialist',
+    certifications: [
+      {
+        type: 'Armament Systems Technician',
+        number: 'AST-2023-587',
+        issuedDate: '2022-09-18',
+        expirationDate: '2025-09-18',
+        status: 'Active'
+      },
+      {
+        type: 'Radar Systems Certification',
+        number: 'RSC-789',
+        issuedDate: '2021-06-30',
+        expirationDate: '2023-10-30', // Critical - about to expire soon
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Advanced Weapons Integration',
+        completedDate: '2022-11-09',
+        validUntil: '2024-11-09',
+        score: 91
+      },
+      {
+        name: 'Military Radar Systems Maintenance',
+        completedDate: '2023-03-20',
+        validUntil: '2025-03-20',
+        score: 89
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-4578',
+        taskType: 'Weapons Bay Inspection',
+        startDate: '2023-07-05',
+        endDate: '2023-07-06',
+        outcome: 'Completed'
+      },
+      {
+        aircraftId: 'AC-9125',
+        taskType: 'Radar Calibration',
+        startDate: '2023-08-01',
+        endDate: '2023-08-03',
+        outcome: 'Completed'
+      }
+    ],
+    availability: 'Available'
   },
+  {
+    id: '5',
+    name: 'Michael Chen',
+    specialties: ['Avionics', 'Electrical'],
+    available: false,
+    rank: 'Technician I',
+    availability: 'Off Duty'
+  },
+  {
+    id: '6',
+    name: 'Robert Taylor',
+    specialties: ['Engines', 'Fuel Systems'],
+    available: true,
+    rank: 'Senior Technician',
+    certifications: [
+      {
+        type: 'F135 Engine Specialist',
+        number: 'F135-2021-392',
+        issuedDate: '2021-03-25',
+        expirationDate: '2023-03-25', // Expired
+        status: 'Expired'
+      },
+      {
+        type: 'Fuel Systems Safety',
+        number: 'FSS-634',
+        issuedDate: '2022-04-10',
+        expirationDate: '2024-04-10',
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Advanced Engine Diagnostics',
+        completedDate: '2021-05-15',
+        validUntil: '2023-05-15', // Expired
+        score: 86
+      },
+      {
+        name: 'Fuel System Troubleshooting',
+        completedDate: '2022-08-22',
+        validUntil: '2024-08-22',
+        score: 90
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-6423',
+        taskType: 'Engine Performance Test',
+        startDate: '2023-04-18',
+        endDate: '2023-04-19',
+        outcome: 'Completed'
+      }
+    ],
+    availability: 'Available'
+  },
+  {
+    id: '7',
+    name: 'Jennifer Lee',
+    specialties: ['Hydraulics', 'Environmental Systems'],
+    available: true,
+    rank: 'Technician II',
+    certifications: [
+      {
+        type: 'Environmental Control Systems',
+        number: 'ECS-2022-156',
+        issuedDate: '2022-02-28',
+        expirationDate: '2024-02-28',
+        status: 'Active'
+      },
+      {
+        type: 'Hydraulic Power Systems',
+        number: 'HPS-789',
+        issuedDate: '2021-09-15',
+        expirationDate: '2023-09-15', // Critical - expires very soon
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Hydraulic System Troubleshooting',
+        completedDate: '2021-10-10',
+        validUntil: '2023-10-10',
+        score: 92
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-2917',
+        taskType: 'Hydraulic System Overhaul',
+        startDate: '2023-07-12',
+        endDate: '2023-07-15',
+        outcome: 'Completed'
+      }
+    ],
+    availability: 'Available'
+  },
+  {
+    id: '8',
+    name: 'Thomas Wright',
+    specialties: ['Airframe', 'Composite Repair'],
+    available: false,
+    currentAssignment: 'AC-5132 Structural Repair',
+    rank: 'Specialist',
+    certifications: [
+      {
+        type: 'Advanced Composite Repair',
+        number: 'ACR-2022-734',
+        issuedDate: '2022-05-10',
+        expirationDate: '2024-05-10',
+        status: 'Active'
+      }
+    ],
+    trainings: [
+      {
+        name: 'Carbon Fiber Repair Techniques',
+        completedDate: '2022-06-15',
+        validUntil: '2024-06-15',
+        score: 94
+      }
+    ],
+    assignmentHistory: [
+      {
+        aircraftId: 'AC-5132',
+        taskType: 'Structural Repair',
+        startDate: '2023-09-05',
+        endDate: '2023-09-12',
+        outcome: 'In Progress'
+      },
+      {
+        aircraftId: 'AC-3789',
+        taskType: 'Wing Panel Replacement',
+        startDate: '2023-08-10',
+        endDate: '2023-08-15',
+        outcome: 'Completed'
+      }
+    ],
+    availability: 'On Duty'
+  }
 ];
 
 // Generate mock parts
@@ -111,16 +474,16 @@ const generateRepair = (aircraftId: string, repairId: string): Repair => ({
   stage: 'Maintenance In Work' as RepairStage,
   startTime: toISOString(subDays(NOW, 1)),
   estimatedCompletionTime: toISOString(addDays(NOW, 2)),
-  technicianIds: [mockTechnicians[0].id, mockTechnicians[1].id],
-  assignedTechnicians: [mockTechnicians[0], mockTechnicians[1]],
+  assignedTechnicians: [mockTechnicians[0]],
+  technicianIds: [mockTechnicians[0].id],
+  status: 'In Progress',
+  description: 'Repairing hydraulic system components',
+  location: 'Main Hangar',
   partsRequired: [
     { id: mockParts[0].id, quantity: 1, name: mockParts[0].name },
     { id: mockParts[3].id, quantity: 2, name: mockParts[3].name }
   ],
-  notes: 'Replacing main hydraulic pump and testing system integrity',
-  status: 'In Progress',
-  description: 'Repairing hydraulic system components',
-  location: 'Main Hangar'
+  notes: 'Replacing main hydraulic pump and testing system integrity'
 });
 
 // Generate mock missions
@@ -598,8 +961,8 @@ export const mockAircraft: Aircraft[] = [
       assignedTechnicians: [mockTechnicians[0]],
       partsRequired: [{
         id: mockParts[0].id,
-        name: mockParts[0].name,
-        quantity: 1
+        quantity: 1,
+        name: mockParts[0].name
       }],
       location: 'Hangar D (KHIF)'
     },
@@ -695,8 +1058,8 @@ export const mockAircraft: Aircraft[] = [
       assignedTechnicians: [mockTechnicians[0]],
       partsRequired: [{
         id: mockParts[0].id,
-        name: mockParts[0].name,
-        quantity: 1
+        quantity: 1,
+        name: mockParts[0].name
       }],
       location: 'Hangar A'
     },
@@ -731,8 +1094,8 @@ export const mockAircraft: Aircraft[] = [
       assignedTechnicians: [mockTechnicians[0]],
       partsRequired: [{
         id: mockParts[0].id,
-        name: mockParts[0].name,
-        quantity: 1
+        quantity: 1,
+        name: mockParts[0].name
       }],
       location: 'Hangar B'
     },
@@ -746,7 +1109,7 @@ export const mockAircraft: Aircraft[] = [
     id: '55',
     tailNumber: "AF-55",
     model: "C-130J",
-    status: 'Maintenance',
+    status: "Maintenance",
     location: "Hangar C",
     locationLat: 41.125,
     locationLng: -111.975,
@@ -767,8 +1130,8 @@ export const mockAircraft: Aircraft[] = [
       assignedTechnicians: [mockTechnicians[0]],
       partsRequired: [{
         id: mockParts[0].id,
-        name: mockParts[0].name,
-        quantity: 1
+        quantity: 1,
+        name: mockParts[0].name
       }],
       location: 'Hangar C'
     },
@@ -901,3 +1264,474 @@ export const mockBases: Base[] = [
     status: 'Active'
   }
 ];
+
+// Add mock fault isolation procedures
+export const mockFaultIsolationProcedures: FaultIsolationProcedure[] = [
+  {
+    id: 'fi-001',
+    code: 'FI-HYD-001',
+    title: 'Hydraulic System Pressure Loss',
+    description: 'Isolate source of hydraulic pressure loss in main system',
+    estimatedTime: 1.5,
+    requiredPersonnel: ['Hydraulic Specialist'],
+    equipment: ['Hydraulic Test Stand', 'Pressure Gauges'],
+    relatedSystems: ['Main Hydraulics', 'Landing Gear'],
+    prerequisites: ['Aircraft Powered Down', 'System Depressurized']
+  },
+  {
+    id: 'fi-002',
+    code: 'FI-ELEC-001',
+    title: 'Electrical Power Fluctuation',
+    description: 'Diagnose intermittent power supply issues',
+    estimatedTime: 2,
+    requiredPersonnel: ['Electrical Specialist'],
+    equipment: ['Multimeter', 'Power Supply Analyzer'],
+    relatedSystems: ['Electrical', 'Avionics'],
+    prerequisites: ['Battery Disconnected']
+  },
+  {
+    id: 'fi-003',
+    code: 'FI-FUEL-001',
+    title: 'Fuel System Pressure Anomaly',
+    description: 'Diagnose fuel system pressure fluctuations',
+    estimatedTime: 1.5,
+    requiredPersonnel: ['Fuel Systems Specialist'],
+    equipment: ['Fuel Pressure Gauge', 'Flow Meter'],
+    relatedSystems: ['Fuel System', 'Engine'],
+    prerequisites: ['Fuel System Depressurized']
+  },
+  {
+    id: 'fi-004',
+    code: 'FI-NAV-001',
+    title: 'Navigation System Error',
+    description: 'Isolate source of navigation system malfunction',
+    estimatedTime: 2.5,
+    requiredPersonnel: ['Avionics Specialist'],
+    equipment: ['Navigation Test Set', 'GPS Simulator'],
+    relatedSystems: ['Navigation', 'GPS'],
+    prerequisites: ['Ground Power Connected']
+  },
+  {
+    id: 'fi-005',
+    code: 'FI-COM-001',
+    title: 'Communication System Fault',
+    description: 'Diagnose radio communication issues',
+    estimatedTime: 1,
+    requiredPersonnel: ['Communications Specialist'],
+    equipment: ['Radio Test Set', 'Frequency Analyzer'],
+    relatedSystems: ['Communications', 'Antenna'],
+    prerequisites: ['Power Available']
+  },
+  {
+    id: 'fi-006',
+    code: 'FI-LAND-001',
+    title: 'Landing Gear Extension Fault',
+    description: 'Troubleshoot landing gear extension system',
+    estimatedTime: 2,
+    requiredPersonnel: ['Landing Gear Specialist'],
+    equipment: ['Hydraulic Test Stand', 'Extension Test Kit'],
+    relatedSystems: ['Landing Gear', 'Hydraulics'],
+    prerequisites: ['Aircraft Jacked']
+  },
+  {
+    id: 'fi-007',
+    code: 'FI-ENG-001',
+    title: 'Engine Performance Analysis',
+    description: 'Analyze engine performance anomalies',
+    estimatedTime: 3,
+    requiredPersonnel: ['Engine Specialist', 'Test Engineer'],
+    equipment: ['Engine Diagnostic Computer', 'Performance Analyzer'],
+    relatedSystems: ['Engine', 'Fuel System'],
+    prerequisites: ['Engine Cool Down Complete']
+  },
+  {
+    id: 'fi-008',
+    code: 'FI-APU-001',
+    title: 'APU Start Fault',
+    description: 'Diagnose APU starting system issues',
+    estimatedTime: 1.5,
+    requiredPersonnel: ['APU Specialist'],
+    equipment: ['APU Test Set', 'Starting System Analyzer'],
+    relatedSystems: ['APU', 'Electrical'],
+    prerequisites: ['Battery Power Available']
+  },
+  {
+    id: 'fi-009',
+    code: 'FI-RADAR-001',
+    title: 'Radar System Fault',
+    description: 'Isolate radar system malfunction',
+    estimatedTime: 2,
+    requiredPersonnel: ['Radar Specialist'],
+    equipment: ['Radar Test Set', 'Signal Generator'],
+    relatedSystems: ['Radar', 'Avionics'],
+    prerequisites: ['System Power Available']
+  },
+  {
+    id: 'fi-010',
+    code: 'FI-BRAKE-001',
+    title: 'Brake System Analysis',
+    description: 'Diagnose brake system issues',
+    estimatedTime: 1.5,
+    requiredPersonnel: ['Brake Specialist'],
+    equipment: ['Brake Pressure Tester', 'Wear Gauge'],
+    relatedSystems: ['Brakes', 'Hydraulics'],
+    prerequisites: ['Wheels Chocked']
+  },
+  {
+    id: 'fi-011',
+    code: 'FI-CTRL-001',
+    title: 'Flight Control Response',
+    description: 'Analyze flight control system anomalies',
+    estimatedTime: 2.5,
+    requiredPersonnel: ['Flight Control Specialist'],
+    equipment: ['Control Surface Tester', 'Movement Analyzer'],
+    relatedSystems: ['Flight Controls', 'Hydraulics'],
+    prerequisites: ['Hydraulic Power Available']
+  },
+  {
+    id: 'fi-012',
+    code: 'FI-OXYGEN-001',
+    title: 'Oxygen System Check',
+    description: 'Investigate oxygen system faults',
+    estimatedTime: 1,
+    requiredPersonnel: ['Environmental Specialist'],
+    equipment: ['Oxygen Analyzer', 'Pressure Tester'],
+    relatedSystems: ['Oxygen', 'Environmental'],
+    prerequisites: ['System Depressurized']
+  }
+];
+
+// Add mock repair procedures
+export const mockRepairProcedures: RepairProcedure[] = [
+  {
+    id: 'rp-001',
+    code: 'RP-HYD-001',
+    title: 'Hydraulic Pump Replacement',
+    description: 'Replace faulty hydraulic pump',
+    estimatedTime: 4,
+    requiredParts: ['Hydraulic Pump P/N 123-456', 'Seal Kit'],
+    requiredPersonnel: ['Hydraulic Specialist', 'Assistant'],
+    equipment: ['Hydraulic Test Stand', 'Torque Wrench']
+  },
+  {
+    id: 'rp-002',
+    code: 'RP-ELEC-001',
+    title: 'Generator Control Unit Replacement',
+    description: 'Replace faulty GCU',
+    estimatedTime: 3,
+    requiredParts: ['GCU P/N 789-012'],
+    requiredPersonnel: ['Electrical Specialist'],
+    equipment: ['Diagnostic Computer']
+  },
+  {
+    id: 'rp-003',
+    code: 'RP-FUEL-001',
+    title: 'Fuel Pump Replacement',
+    description: 'Replace malfunctioning fuel pump',
+    estimatedTime: 3,
+    requiredParts: ['Fuel Pump P/N 234-567', 'Gasket Kit'],
+    requiredPersonnel: ['Fuel System Specialist'],
+    equipment: ['Fuel System Tools', 'Torque Wrench']
+  },
+  {
+    id: 'rp-004',
+    code: 'RP-NAV-001',
+    title: 'Navigation Computer Update',
+    description: 'Replace and update navigation computer',
+    estimatedTime: 2,
+    requiredParts: ['Nav Computer P/N 345-678'],
+    requiredPersonnel: ['Avionics Specialist'],
+    equipment: ['Diagnostic Computer', 'Software Loader']
+  },
+  {
+    id: 'rp-005',
+    code: 'RP-RADAR-001',
+    title: 'Radar Antenna Replacement',
+    description: 'Replace faulty radar antenna',
+    estimatedTime: 4,
+    requiredParts: ['Radar Antenna P/N 456-789'],
+    requiredPersonnel: ['Radar Specialist', 'Assistant'],
+    equipment: ['Crane', 'Calibration Kit']
+  },
+  {
+    id: 'rp-006',
+    code: 'RP-APU-001',
+    title: 'APU Starter Replacement',
+    description: 'Replace failed APU starter',
+    estimatedTime: 3,
+    requiredParts: ['APU Starter P/N 567-890'],
+    requiredPersonnel: ['APU Specialist'],
+    equipment: ['APU Tools', 'Tester']
+  },
+  {
+    id: 'rp-007',
+    code: 'RP-BRAKE-001',
+    title: 'Brake Assembly Replacement',
+    description: 'Replace worn brake assembly',
+    estimatedTime: 2,
+    requiredParts: ['Brake Assembly P/N 678-901'],
+    requiredPersonnel: ['Brake Specialist'],
+    equipment: ['Jack Stand', 'Brake Tools']
+  },
+  {
+    id: 'rp-008',
+    code: 'RP-OXYGEN-001',
+    title: 'Oxygen Regulator Replacement',
+    description: 'Replace faulty oxygen regulator',
+    estimatedTime: 1.5,
+    requiredParts: ['O2 Regulator P/N 789-012'],
+    requiredPersonnel: ['Environmental Specialist'],
+    equipment: ['O2 System Tools', 'Tester']
+  },
+  {
+    id: 'rp-009',
+    code: 'RP-CTRL-001',
+    title: 'Control Surface Actuator',
+    description: 'Replace control surface actuator',
+    estimatedTime: 4,
+    requiredParts: ['Actuator P/N 890-123'],
+    requiredPersonnel: ['Flight Control Specialist'],
+    equipment: ['Hydraulic Tools', 'Rigging Kit']
+  },
+  {
+    id: 'rp-010',
+    code: 'RP-LAND-001',
+    title: 'Landing Gear Strut',
+    description: 'Replace landing gear strut',
+    estimatedTime: 6,
+    requiredParts: ['Strut Assembly P/N 901-234'],
+    requiredPersonnel: ['Landing Gear Specialist', 'Assistant'],
+    equipment: ['Jack Stands', 'Alignment Tools']
+  },
+  {
+    id: 'rp-011',
+    code: 'RP-ENG-001',
+    title: 'Engine Fuel Control',
+    description: 'Replace engine fuel control unit',
+    estimatedTime: 5,
+    requiredParts: ['Fuel Control P/N 012-345'],
+    requiredPersonnel: ['Engine Specialist'],
+    equipment: ['Engine Tools', 'Test Equipment']
+  },
+  {
+    id: 'rp-012',
+    code: 'RP-COM-001',
+    title: 'Radio Transceiver',
+    description: 'Replace faulty radio transceiver',
+    estimatedTime: 2,
+    requiredParts: ['Transceiver P/N 123-456'],
+    requiredPersonnel: ['Communications Specialist'],
+    equipment: ['Radio Test Set', 'Tools']
+  }
+];
+
+// Add mock mod kits
+export const mockModKits: ModKit[] = [
+  {
+    id: 'mk-001',
+    code: 'MK-AV-001',
+    title: 'Navigation System Upgrade',
+    description: 'Install updated navigation computer and software',
+    estimatedTime: 6,
+    compatibility: ['F-22A', 'F-35A'],
+    requiredParts: ['Nav Computer', 'Wiring Harness'],
+    requiredPersonnel: ['Avionics Specialist', 'Software Technician']
+  },
+  {
+    id: 'mk-002',
+    code: 'MK-COM-001',
+    title: 'Communications Suite Update',
+    description: 'Update radio and encryption modules',
+    estimatedTime: 4,
+    compatibility: ['All Models'],
+    requiredParts: ['Encryption Module', 'Radio Module'],
+    requiredPersonnel: ['Communications Specialist']
+  },
+  {
+    id: 'mk-003',
+    code: 'MK-RADAR-001',
+    title: 'Advanced Radar Upgrade',
+    description: 'Install new generation radar system',
+    estimatedTime: 8,
+    compatibility: ['F-22A', 'F-35A'],
+    requiredParts: ['Radar Unit', 'Processing Module'],
+    requiredPersonnel: ['Radar Specialist', 'Software Engineer']
+  },
+  {
+    id: 'mk-004',
+    code: 'MK-ENG-001',
+    title: 'Engine Performance Upgrade',
+    description: 'Install engine performance enhancement kit',
+    estimatedTime: 12,
+    compatibility: ['F-22A'],
+    requiredParts: ['Engine Components', 'Control Unit'],
+    requiredPersonnel: ['Engine Specialist', 'Test Engineer']
+  },
+  {
+    id: 'mk-005',
+    code: 'MK-FUEL-001',
+    title: 'Fuel System Enhancement',
+    description: 'Upgrade fuel management system',
+    estimatedTime: 6,
+    compatibility: ['All Models'],
+    requiredParts: ['Fuel Computer', 'Sensors'],
+    requiredPersonnel: ['Fuel System Specialist']
+  },
+  {
+    id: 'mk-006',
+    code: 'MK-COCK-001',
+    title: 'Cockpit Display Upgrade',
+    description: 'Install modern glass cockpit displays',
+    estimatedTime: 10,
+    compatibility: ['C-130J', 'F-35A'],
+    requiredParts: ['Display Units', 'Control Panel'],
+    requiredPersonnel: ['Avionics Specialist', 'Software Technician']
+  },
+  {
+    id: 'mk-007',
+    code: 'MK-SELF-001',
+    title: 'Self-Protection Suite',
+    description: 'Install advanced threat detection system',
+    estimatedTime: 14,
+    compatibility: ['F-22A', 'F-35A'],
+    requiredParts: ['Sensor Suite', 'Processing Unit'],
+    requiredPersonnel: ['Electronic Warfare Specialist']
+  },
+  {
+    id: 'mk-008',
+    code: 'MK-DATA-001',
+    title: 'Data Link System Update',
+    description: 'Upgrade tactical data link capabilities',
+    estimatedTime: 8,
+    compatibility: ['All Models'],
+    requiredParts: ['Data Link Module', 'Antenna System'],
+    requiredPersonnel: ['Communications Specialist']
+  },
+  {
+    id: 'mk-009',
+    code: 'MK-ENV-001',
+    title: 'Environmental Control Upgrade',
+    description: 'Enhance environmental control system',
+    estimatedTime: 9,
+    compatibility: ['C-130J'],
+    requiredParts: ['Control Unit', 'Sensor Package'],
+    requiredPersonnel: ['Environmental Systems Specialist']
+  },
+  {
+    id: 'mk-010',
+    code: 'MK-LAND-001',
+    title: 'Landing System Enhancement',
+    description: 'Upgrade landing assistance systems',
+    estimatedTime: 7,
+    compatibility: ['All Models'],
+    requiredParts: ['Radar Unit', 'Processing Module'],
+    requiredPersonnel: ['Avionics Specialist', 'Software Engineer']
+  },
+  {
+    id: 'mk-011',
+    code: 'MK-CARGO-001',
+    title: 'Cargo Handling System',
+    description: 'Install advanced cargo handling system',
+    estimatedTime: 16,
+    compatibility: ['C-130J'],
+    requiredParts: ['Handling Equipment', 'Control System'],
+    requiredPersonnel: ['Structural Specialist', 'Systems Engineer']
+  },
+  {
+    id: 'mk-012',
+    code: 'MK-LIGHT-001',
+    title: 'LED Lighting Upgrade',
+    description: 'Convert all lighting to LED systems',
+    estimatedTime: 5,
+    compatibility: ['All Models'],
+    requiredParts: ['LED Units', 'Control Modules'],
+    requiredPersonnel: ['Electrical Specialist']
+  }
+];
+
+// Add mock aircraft with anomalies
+export const mockAircraftWithAnomalies: AircraftWithAnomalies[] = [
+  {
+    id: '1',
+    tailNumber: 'AF-12345',
+    model: 'C-130J',
+    status: 'Maintenance Required',
+    location: 'Hangar A',
+    nextMission: new Date('2024-02-29T10:00:00'),
+    anomalies: [
+      {
+        id: 'a1',
+        description: 'Hydraulic pressure fluctuation in main system',
+        reportedAt: new Date('2024-02-28'),
+        severity: 'high',
+        system: 'Hydraulics'
+      },
+      {
+        id: 'a2',
+        description: 'Navigation system intermittent errors',
+        reportedAt: new Date('2024-02-27'),
+        severity: 'medium',
+        system: 'Avionics'
+      }
+    ]
+  },
+  {
+    id: '2',
+    tailNumber: 'AF-12346',
+    model: 'F-35A',
+    status: 'Maintenance Required',
+    location: 'Hangar B',
+    nextMission: new Date('2024-02-29T14:00:00'),
+    anomalies: [
+      {
+        id: 'a3',
+        description: 'Engine temperature sensor malfunction',
+        reportedAt: new Date('2024-02-28'),
+        severity: 'high',
+        system: 'Propulsion'
+      }
+    ]
+  },
+  {
+    id: '3',
+    tailNumber: 'AF-12347',
+    model: 'F-22A',
+    status: 'Maintenance Required',
+    location: 'Hangar C',
+    nextMission: new Date('2024-02-29T08:00:00'),
+    anomalies: [
+      {
+        id: 'a4',
+        description: 'Landing gear retraction delay',
+        reportedAt: new Date('2024-02-27'),
+        severity: 'medium',
+        system: 'Landing Gear'
+      },
+      {
+        id: 'a5',
+        description: 'Radar system calibration error',
+        reportedAt: new Date('2024-02-28'),
+        severity: 'high',
+        system: 'Avionics'
+      },
+      {
+        id: 'a6',
+        description: 'Fuel gauge inconsistent readings',
+        reportedAt: new Date('2024-02-26'),
+        severity: 'low',
+        system: 'Fuel'
+      }
+    ]
+  }
+];
+
+// Helper function to check qualification status
+export const getQualificationStatus = (expirationDate: string): 'Active' | 'Expired' | 'Expiring Soon' => {
+  const now = new Date();
+  const expDate = new Date(expirationDate);
+  const daysUntilExpiration = Math.floor((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysUntilExpiration < 0) return 'Expired';
+  if (daysUntilExpiration <= 30) return 'Expiring Soon';
+  return 'Active';
+};

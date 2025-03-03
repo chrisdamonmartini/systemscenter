@@ -5,7 +5,7 @@ import FleetOverview from './components/FleetOverview';
 import DetailedAircraftView from './components/DetailedAircraftView';
 import MissionSchedule from './components/MissionSchedule';
 import MaintenanceStatus from './components/MaintenanceStatus';
-import Sidebar from './components/Sidebar';
+import Sidebar from './components/Sidebar/Sidebar';
 import { Aircraft, Repair } from './types';
 import { motion } from 'framer-motion';
 import FleetManagement from './components/FleetManagement';
@@ -21,6 +21,8 @@ import FlightTestManagement from './components/FlightTest/FlightTestManagement';
 import Settings from './components/Settings/Settings';
 import MaintenanceSchedule from './components/Maintenance/MaintenanceSchedule';
 import RepairTracker from './components/RepairTracker/RepairTracker';
+import MaintenanceBuilder from './components/MaintenanceBuilder/MaintenanceBuilder';
+import Process107Dashboard from './components/Process107/Process107Dashboard';
 
 // Helper function to get weather icon
 const getWeatherIcon = (conditions: string) => {
@@ -59,21 +61,17 @@ const Personnel = () => (
 function App() {
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
   const [aircraft] = useState(mockAircraft);
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [activeView, setActiveView] = useState<string>('dashboard');
   const [weather] = useState(mockWeather);
 
   // Function to pass to the Sidebar component
   const handleNavigation = (route: string) => {
-    setCurrentView(route.replace('/', ''));
-    // Reset selected aircraft when changing views
-    if (route !== '/dashboard') {
-      setSelectedAircraft(null);
-    }
+    setActiveView(route.replace('/', '') || 'dashboard');
   };
 
   // Render the appropriate content based on currentView
   const renderContent = () => {
-    switch (currentView) {
+    switch (activeView) {
       case 'dashboard':
         return (
           <>
@@ -130,7 +128,7 @@ function App() {
           </motion.div>
         );
         
-      case 'schedule':
+      case 'missions':
         return (
           <motion.div
             initial={{ opacity: 0 }}
@@ -217,6 +215,21 @@ function App() {
           </motion.div>
         );
         
+      case 'maintenance-builder':
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <MaintenanceBuilder />
+          </motion.div>
+        );
+        
+      case 'process107':
+        return (
+          <Process107Dashboard />
+        );
+        
       default:
         return (
           <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -287,7 +300,7 @@ function App() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar onNavigate={handleNavigation} currentView={currentView} />
+        <Sidebar onNavigate={handleNavigation} currentView={activeView} />
         
         <main className="flex-1 p-6 overflow-auto">
           {renderContent()}

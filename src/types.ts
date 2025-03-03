@@ -292,4 +292,57 @@ export interface MaintenanceRecord {
   stage: string;
   startTime: string;
   completionTime: string;
+}
+
+export interface FaultIsolationProcedure {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  estimatedTime: number;
+  requiredPersonnel: string[];
+  equipment: string[];
+  relatedSystems: string[];
+  prerequisites: string[];
+}
+
+export interface RepairProcedure {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  estimatedTime: number;
+  requiredParts: string[];
+  requiredPersonnel: string[];
+  equipment: string[];
+}
+
+export interface ModKit {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  estimatedTime: number;
+  compatibility: string[];
+  requiredParts: string[];
+  requiredPersonnel: string[];
+}
+
+// Add these new interfaces
+export interface AircraftAnomaly {
+  id: string;
+  description: string;
+  reportedAt: Date;
+  severity: 'high' | 'medium' | 'low';
+  system: string;
+}
+
+export interface AircraftWithAnomalies {
+  id: string;
+  tailNumber: string;
+  model: string;
+  status: string;
+  location: string;
+  nextMission: Date;
+  anomalies: AircraftAnomaly[];
 } 

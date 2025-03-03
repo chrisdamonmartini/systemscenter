@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export type MaintenanceStatus = 
   | 'Operational' 
   | 'In Mission' 
@@ -47,22 +49,84 @@ export interface Mission {
 export interface Repair {
   id: string;
   aircraftId: string;
-  relatedErrorId: string;
+  relatedErrorId?: string;
   stage: MaintenanceStatus;
-  startTime: string; // ISO date string
-  estimatedCompletionTime: string; // ISO date string
-  actualCompletionTime?: string; // ISO date string
+  startTime: string;
+  estimatedCompletionTime: string;
+  actualCompletionTime?: string;
   assignedTechnicians: Technician[];
-  partsRequired: Part[];
+  technicianIds?: string[];
+  status?: string;
+  description?: string;
+  location?: string;
+  partsRequired: {
+    id: string;
+    quantity: number;
+    name: string;
+  }[];
   notes: string;
+}
+
+export interface Qualification {
+  id: string;
+  name: string;
+  type: 'Certification' | 'Training' | 'License';
+  issuedDate: string;
+  expirationDate: string;
+  status: 'Active' | 'Expired' | 'Expiring Soon';
+  issuingAuthority: string;
+  certificationNumber?: string;
+}
+
+export interface SkillRating {
+  skill: string;
+  level: 1 | 2 | 3 | 4 | 5; // 1=Basic, 5=Expert
+  lastAssessed: string;
+  endorsedBy?: string;
+}
+
+export interface Availability {
+  shift: 'Day' | 'Night' | 'Swing';
+  nextAvailable: string; // ISO date string
+  schedule: string[];
+  leaves: string[]; // Array of ISO date strings
+}
+
+export interface Certification {
+  type: string;
+  number: string;
+  issuedDate: string;
+  expirationDate: string;
+  status: string;
+}
+
+export interface Training {
+  name: string;
+  completedDate: string;
+  validUntil: string;
+  score: number;
+}
+
+export interface Assignment {
+  aircraftId: string;
+  taskType: string;
+  startDate: string;
+  endDate: string;
+  outcome: string;
 }
 
 export interface Technician {
   id: string;
   name: string;
-  specialties: string[];
+  specialties?: string[];
   available: boolean;
-  currentAssignment?: string; // repairId
+  currentAssignment?: string;
+  rank?: string;
+  experience?: number;
+  certifications?: Certification[];
+  trainings?: Training[];
+  assignmentHistory?: Assignment[];
+  availability: 'Available' | 'On Duty' | 'Off Duty';
 }
 
 export interface Part {
@@ -88,4 +152,13 @@ export interface WeatherForecast {
   windSpeed: number;
   visibility: number;
   conditions: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  supervisor: string;
+  members: string[];
+  specialization: string[];
+  shift: 'Day' | 'Night' | 'Swing';
 } 
