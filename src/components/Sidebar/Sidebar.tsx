@@ -1,84 +1,93 @@
 import React, { useState } from 'react';
 import * as FaIcons from 'react-icons/fa';
 import * as BiIcons from 'react-icons/bi';
+import * as GoIcons from 'react-icons/go';
+import * as AiIcons from 'react-icons/ai';
+import * as MdIcons from 'react-icons/md';
+import * as GiIcons from 'react-icons/gi';
 import { motion } from 'framer-motion';
 import { 
   HomeOutlined,
   RocketOutlined,
-  UserOutlined,
-  ToolOutlined,
-  CalendarOutlined,
-  BarsOutlined,
+  FundOutlined,
+  ExperimentOutlined,
+  ApartmentOutlined,
+  NodeIndexOutlined,
   SettingOutlined,
-  FileSearchOutlined
+  FileSearchOutlined,
+  AuditOutlined,
+  BranchesOutlined,
+  ProjectOutlined,
+  CheckCircleOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 
-// Update the navigation items array
+// Update the navigation items array for Systems Engineering
 export const SidebarData = [
   {
     title: 'Dashboard',
     path: '/',
-    icon: <BiIcons.BiHome />,
+    icon: <HomeOutlined />,
     subNav: []
   },
   {
-    title: 'Fleet Management',
-    path: '/fleet',
-    icon: <FaIcons.FaPlane />,
+    title: 'Requirements',
+    path: '/requirements',
+    icon: <AuditOutlined />,
     subNav: []
   },
   {
-    title: 'Mission Schedule',
-    path: '/missions',
-    icon: <FaIcons.FaCalendar />,
+    title: 'Functions',
+    path: '/functions',
+    icon: <BranchesOutlined />,
     subNav: []
   },
   {
-    title: 'Personnel',
-    path: '/personnel',
-    icon: <FaIcons.FaUsers />,
+    title: 'Logical Architecture',
+    path: '/logical',
+    icon: <ApartmentOutlined />,
     subNav: []
   },
   {
-    title: 'Parts Inventory',
-    path: '/inventory',
-    icon: <FaIcons.FaBoxes />,
+    title: 'Physical Architecture',
+    path: '/physical',
+    icon: <NodeIndexOutlined />,
     subNav: []
   },
   {
-    title: 'Flight Test',
-    path: '/flight-test',
-    icon: <FaIcons.FaClipboardCheck />,
+    title: 'Program Management',
+    path: '/program',
+    icon: <ProjectOutlined />,
+    subNav: []
+  },
+  {
+    title: 'Risk Management',
+    path: '/risks',
+    icon: <WarningOutlined />,
+    subNav: []
+  },
+  {
+    title: 'Trade Studies',
+    path: '/trade-studies',
+    icon: <FundOutlined />,
+    subNav: []
+  },
+  {
+    title: 'Verification Matrix',
+    path: '/verification',
+    icon: <CheckCircleOutlined />,
+    subNav: []
+  },
+  {
+    title: 'Integration',
+    path: '/integration',
+    icon: <GiIcons.GiGears />,
     subNav: []
   },
   {
     title: 'Reports',
     path: '/reports',
     icon: <FaIcons.FaChartBar />,
-    subNav: []
-  },
-  {
-    title: 'Maintenance Schedule',
-    path: '/maintenance',
-    icon: <FaIcons.FaCalendarCheck />,
-    subNav: []
-  },
-  {
-    title: 'Repair Tracker',
-    path: '/repairs',
-    icon: <FaIcons.FaTools />,
-    subNav: []
-  },
-  {
-    title: 'Maintenance Builder',
-    path: '/maintenance-builder',
-    icon: <FaIcons.FaWrench />,
-    subNav: []
-  },
-  {
-    title: '107 Process',
-    path: '/process107',
-    icon: <FileSearchOutlined />,
     subNav: []
   }
 ];
