@@ -1,6 +1,6 @@
 {
-  "short_name": "Fleet Dashboard",
-  "name": "Military Fleet Maintenance Dashboard",
+  "short_name": "SystemsCenter",
+  "name": "SystemsCenter - Aerospace Systems Engineering Dashboard",
   "icons": [
     {
       "src": "favicon.ico",
